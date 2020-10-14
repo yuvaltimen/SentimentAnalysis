@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-import math
+from math import log
 from tqdm import tqdm  # Used to indicate training time
 
 """
@@ -41,8 +41,8 @@ def generate_tuples_from_file(training_file_path):
 def precision(gold_labels, classified_labels):
     """Calculates the precision score given the true labels and the classified labels.
     Parameters:
-        gold_labels (type) - The true labels of the data
-        classified_labels (type) - The classified output of our model
+        gold_labels (dict) - The true labels of the data
+        classified_labels (dict) - The classified output of our model
     Returns:
         float representing the precision metric of our classification
     """
@@ -52,8 +52,8 @@ def precision(gold_labels, classified_labels):
 def recall(gold_labels, classified_labels):
     """Calculates the recall score given the true labels and the classified labels.
     Parameters:
-        gold_labels (type) - The true labels of the data
-        classified_labels (type) - The classified output of our model
+        gold_labels (dict) - The true labels of the data
+        classified_labels (dict) - The classified output of our model
     Returns:
         float representing the recall metric of our classification
     """
@@ -63,8 +63,8 @@ def recall(gold_labels, classified_labels):
 def f1(gold_labels, classified_labels):
     """Calculates the F1 score given the true labels and the classified labels.
     Parameters:
-        gold_labels (type) - The true labels of the data
-        classified_labels (type) - The classified output of our model
+        gold_labels (dict) - The true labels of the data
+        classified_labels (dict) - The classified output of our model
     Returns:
         float representing the F1 metric of our classification
     """
@@ -85,8 +85,13 @@ class SentimentAnalysis:
     def __init__(self):
         """Initialize the SentimentAnalysis class"""
         self.priors = {'0': 0, '1': 0}
+        self.positives_word_counts = {}
+        self.negatives_word_counts = {}
+        self.positives_denominator = 0
+        self.negatives_denominator = 0
         self.vocabulary = set()
-        pass
+        self.vocab_size = 0
+    
     
     def train(self, examples):
         """Train our SentimentAnalysis model by updating the values of our counts
@@ -107,7 +112,8 @@ class SentimentAnalysis:
                 self.priors['0'] += 1
         # Normalize priors to be probabilities
         self.priors = {k: v/len(examples) for k,v in self.priors.items()}
-        print(f"Size of vocabulary: |v| = {len(self.vocabulary)}")
+        self.vocab_size = len(self.vocabulary)
+        print(f"Size of vocabulary: |v| = {self.vocab_size}")
         
         print("Compiling documents...")
         # Next, we need to concatenate all documents with common class c
@@ -119,11 +125,30 @@ class SentimentAnalysis:
         negatives_document = [tup[1] for tup in negative_examples]
         negatives_document = " ".join(negatives_document)
         
+        print("Training on positives...")
+        # Update the word counts for all words in the positive document
+        for w in tqdm(positives_document.split()):
+            if w in self.positives_word_counts.keys():
+                self.positives_word_counts[w] += 1
+            else:
+                self.positives_word_counts[w] = 1
         
+        self.positives_denominator = sum([val for val in self.positives_word_counts.values()])
+        print(f"Pos denom: {self.positives_denominator}")
         
+        print("Training on negatives...")
+        # Update the word counts for all words in the negative document
+        for w in tqdm(negatives_document.split()):
+            if w in self.negatives_word_counts.keys():
+                self.negatives_word_counts[w] += 1
+            else:
+                self.negatives_word_counts[w] = 1
+
+        self.negatives_denominator = sum([val for val in self.negatives_word_counts.values()])
+        print(f"Neg denom: {self.negatives_denominator}")
+        
+        print("Training done!")
     
-        
-            
     
     def score(self, data):
         """Uses the models weights to calculate a score for the given data point
@@ -132,8 +157,27 @@ class SentimentAnalysis:
         Returns:
             dict of values assigning to each class a probability
         """
-        pass
-    
+        print("Scoring...")
+        pos_score = 0
+        neg_score = 0
+        for w in tqdm(data.split()):
+            if w in self.vocabulary:
+                # Update score for positives
+                if w in self.positives_word_counts.keys():
+                    pos_score += log((self.positives_word_counts[w] + 1) / (self.positives_denominator + self.vocab_size))
+                else:
+                    pos_score += log(1 / (self.positives_denominator + self.vocab_size))
+                # Update score for negatives
+                if w in self.negatives_word_counts.keys():
+                    neg_score += log((self.negatives_word_counts[w] + 1) / (self.negatives_denominator + self.vocab_size))
+                else:
+                    neg_score += log(1 / (self.negatives_denominator + self.vocab_size))
+            else:
+                continue
+        
+        return {'0': np.exp(neg_score), '1': np.exp(pos_score)}
+                
+
     def classify(self, data):
         """Returns the argmax of the scores assigned to each class
         Parameters:
@@ -141,7 +185,12 @@ class SentimentAnalysis:
         Returns:
             str label, either '0' or '1'
         """
-        pass
+        score = self.score(data)
+        if score['0'] >= score['1']:
+            return '0'
+        else:
+            return '1'
+    
     
     def featurize(self, data):
         """Featurizes the data by linking each feature to its corresponding value
@@ -149,10 +198,16 @@ class SentimentAnalysis:
             data (str) - The raw text data, ie. the middle element of the training tuple
         Returns:
             list of tuples linking each feature to a value"""
-        pass
+        print("Featurizing...")
+        output = []
+        for w in tqdm(data.split()):
+            output.append((w, True))
+        return output
+        
     
     def __str__(self):
         return "Naive Bayes - bag-of-words baseline"
+
 
 
 class SentimentAnalysisImproved:
@@ -193,6 +248,8 @@ def main():
     # Train the classifier on our training data
     sa.train(training_tuples)
     # Report metrics for the baseline
+    
+    
     
     
     improved = SentimentAnalysisImproved()
