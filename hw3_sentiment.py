@@ -41,34 +41,59 @@ def generate_tuples_from_file(training_file_path):
 def precision(gold_labels, classified_labels):
     """Calculates the precision score given the true labels and the classified labels.
     Parameters:
-        gold_labels (dict) - The true labels of the data
-        classified_labels (dict) - The classified output of our model
+        gold_labels (list) - The true labels of the data
+        classified_labels (list) - The classified output of our model
     Returns:
         float representing the precision metric of our classification
     """
-    pass
+    # precision = tp/(tp + fp)
+    true_positives = 0
+    false_positives = 0
+    
+    for i in range(len(gold_labels)):
+        if gold_labels[i] == '1' and classified_labels[i] == '1':
+            true_positives += 1
+        elif gold_labels[i] == '0' and classified_labels[i] == '1':
+            false_positives += 1
+    
+    return true_positives / (true_positives + false_positives)
 
 
 def recall(gold_labels, classified_labels):
     """Calculates the recall score given the true labels and the classified labels.
     Parameters:
-        gold_labels (dict) - The true labels of the data
-        classified_labels (dict) - The classified output of our model
+        gold_labels (list) - The true labels of the data
+        classified_labels (list) - The classified output of our model
     Returns:
         float representing the recall metric of our classification
     """
-    pass
-
+    # recall = tp/(tp + fn)
+    
+    true_positives = 0
+    false_negatives = 0
+    
+    for i in range(len(gold_labels)):
+        if gold_labels[i] == '1' and classified_labels[i] == '1':
+            true_positives += 1
+        elif gold_labels[i] == '1' and classified_labels[i] == '0':
+            false_negatives += 1
+    
+    return true_positives / (true_positives + false_negatives)
+    
 
 def f1(gold_labels, classified_labels):
     """Calculates the F1 score given the true labels and the classified labels.
     Parameters:
-        gold_labels (dict) - The true labels of the data
-        classified_labels (dict) - The classified output of our model
+        gold_labels (list) - The true labels of the data
+        classified_labels (list) - The classified output of our model
     Returns:
         float representing the F1 metric of our classification
     """
-    pass
+    # f1 = (2 * pr * re) / (pr + re)
+    prec = precision(gold_labels, classified_labels)
+    rec = recall(gold_labels, classified_labels)
+    
+    return (2 * prec * rec) / (prec + rec)
 
 
 """
@@ -248,17 +273,27 @@ def main():
     # Train the classifier on our training data
     sa.train(training_tuples)
     # Report metrics for the baseline
+    classified_labels = []
+    gold_labels = []
+    for test in testing_tuples:
+        classified_labels.append(sa.classify(test[1]))
+        gold_labels.append(test[2])
+    
+    print(f"Precision: {precision(gold_labels, classified_labels)}")
+    print(f"Recall: {recall(gold_labels, classified_labels)}")
+    print(f"F1 metric: {f1(gold_labels, classified_labels)}")
     
     
     
     
-    improved = SentimentAnalysisImproved()
-    print(improved)
-    # do the things that you need to with your improved class
-    
-    # report final precision, recall, f1 (for your best model)
-    
-    print(improved.describe_experiments())
+    #
+    # improved = SentimentAnalysisImproved()
+    # print(improved)
+    # # do the things that you need to with your improved class
+    #
+    # # report final precision, recall, f1 (for your best model)
+    #
+    # print(improved.describe_experiments())
 
 
 if __name__ == "__main__":
