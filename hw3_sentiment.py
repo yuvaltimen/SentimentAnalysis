@@ -1,7 +1,6 @@
 import numpy as np
 import sys
 from math import log
-from tqdm import tqdm  # Used to indicate training time
 
 """
 Yuval Timen
@@ -31,7 +30,8 @@ def generate_tuples_from_file(training_file_path):
     output = []
     with open(training_file_path, 'r') as file_read:
         for line in file_read.readlines():
-            if len(line.strip()) != 0:
+            line = line.strip()
+            if len(line) != 0:
                 output.append(tuple(line.split("\t")))
     
     print(f"Read-in {training_file_path[:10]}, found {len(output)} lines")
@@ -129,7 +129,7 @@ class SentimentAnalysis:
         # We can also update the priors here
         print("Training...")
         print("Building vocabulary and updating priors...")
-        for tup in tqdm(examples):
+        for tup in examples:
             self.vocabulary = self.vocabulary.union(set(tup[1].split()))
             if bool(int(tup[2])):
                 self.priors['1'] += 1
@@ -152,7 +152,7 @@ class SentimentAnalysis:
         
         print("Training on positives...")
         # Update the word counts for all words in the positive document
-        for w in tqdm(positives_document.split()):
+        for w in positives_document.split():
             if w in self.positives_word_counts.keys():
                 self.positives_word_counts[w] += 1
             else:
@@ -163,7 +163,7 @@ class SentimentAnalysis:
         
         print("Training on negatives...")
         # Update the word counts for all words in the negative document
-        for w in tqdm(negatives_document.split()):
+        for w in negatives_document.split():
             if w in self.negatives_word_counts.keys():
                 self.negatives_word_counts[w] += 1
             else:
@@ -183,9 +183,9 @@ class SentimentAnalysis:
             dict of values assigning to each class a probability
         """
         print("Scoring...")
-        pos_score = 0
-        neg_score = 0
-        for w in tqdm(data.split()):
+        pos_score = log(self.priors['1'])
+        neg_score = log(self.priors['0'])
+        for w in data.split():
             if w in self.vocabulary:
                 # Update score for positives
                 if w in self.positives_word_counts.keys():
@@ -225,7 +225,7 @@ class SentimentAnalysis:
             list of tuples linking each feature to a value"""
         print("Featurizing...")
         output = []
-        for w in tqdm(data.split()):
+        for w in data.split():
             output.append((w, True))
         return output
         
