@@ -107,7 +107,7 @@ implement your SentimentAnalysis class here
 
 class SentimentAnalysis:
     
-    def __init__(self):
+    def __init__(self, use_binary=False):
         """Initialize the SentimentAnalysis class"""
         self.priors = {'0': 0, '1': 0}
         self.positives_word_counts = {}
@@ -115,6 +115,7 @@ class SentimentAnalysis:
         self.positives_denominator = 0
         self.negatives_denominator = 0
         self.vocabulary = set()
+        self.binary = use_binary
         self.vocab_size = 0
     
     
@@ -127,8 +128,6 @@ class SentimentAnalysis:
         """
         # First, we build our vocabulary
         # We can also update the priors here
-        print("Training...")
-        print("Building vocabulary and updating priors...")
         for tup in examples:
             self.vocabulary = self.vocabulary.union(set(tup[1].split()))
             if bool(int(tup[2])):
@@ -140,17 +139,23 @@ class SentimentAnalysis:
         self.vocab_size = len(self.vocabulary)
         print(f"Size of vocabulary: |v| = {self.vocab_size}")
         
-        print("Compiling documents...")
-        # Next, we need to concatenate all documents with common class c
+        # We split the examples into positives and negatives
+        # We group them by their classification
         positive_examples = list(filter(lambda tup: bool(int(tup[2])), examples))
-        positives_document = [tup[1] for tup in positive_examples]
-        positives_document = " ".join(positives_document)
-        
         negative_examples = list(filter(lambda tup: not bool(int(tup[2])), examples))
-        negatives_document = [tup[1] for tup in negative_examples]
+        
+        # If we're using Binary-NB, let's remove all duplicate words in each document
+        if self.binary:
+            positives_document = [" ".join(set(tup[1].split())) for tup in positive_examples]
+            negatives_document = [" ".join(set(tup[1].split())) for tup in negative_examples]
+        else:
+            positives_document = [tup[1] for tup in positive_examples]
+            negatives_document = [tup[1] for tup in negative_examples]
+        
+        # Concatenate all the documents in each class
+        positives_document = " ".join(positives_document)
         negatives_document = " ".join(negatives_document)
         
-        print("Training on positives...")
         # Update the word counts for all words in the positive document
         for w in positives_document.split():
             if w in self.positives_word_counts.keys():
@@ -159,9 +164,7 @@ class SentimentAnalysis:
                 self.positives_word_counts[w] = 1
         
         self.positives_denominator = sum([val for val in self.positives_word_counts.values()])
-        print(f"Pos denom: {self.positives_denominator}")
         
-        print("Training on negatives...")
         # Update the word counts for all words in the negative document
         for w in negatives_document.split():
             if w in self.negatives_word_counts.keys():
@@ -170,9 +173,6 @@ class SentimentAnalysis:
                 self.negatives_word_counts[w] = 1
 
         self.negatives_denominator = sum([val for val in self.negatives_word_counts.values()])
-        print(f"Neg denom: {self.negatives_denominator}")
-        
-        print("Training done!")
     
     
     def score(self, data):
@@ -182,7 +182,6 @@ class SentimentAnalysis:
         Returns:
             dict of values assigning to each class a probability
         """
-        print("Scoring...")
         pos_score = log(self.priors['1'])
         neg_score = log(self.priors['0'])
         for w in data.split():
@@ -223,7 +222,6 @@ class SentimentAnalysis:
             data (str) - The raw text data, ie. the middle element of the training tuple
         Returns:
             list of tuples linking each feature to a value"""
-        print("Featurizing...")
         output = []
         for w in data.split():
             output.append((w, True))
@@ -270,6 +268,7 @@ def main():
     
     # Create our classifier
     sa = SentimentAnalysis()
+    print(sa)
     # Train the classifier on our training data
     sa.train(training_tuples)
     # Report metrics for the baseline
@@ -283,17 +282,13 @@ def main():
     print(f"Recall: {recall(gold_labels, classified_labels)}")
     print(f"F1 metric: {f1(gold_labels, classified_labels)}")
     
-    
-    
-    
-    #
-    # improved = SentimentAnalysisImproved()
-    # print(improved)
-    # # do the things that you need to with your improved class
-    #
-    # # report final precision, recall, f1 (for your best model)
-    #
-    # print(improved.describe_experiments())
+    improved = SentimentAnalysisImproved()
+    print(improved)
+    # Train the classifier on our training data
+
+    # report final precision, recall, f1 (for your best model)
+
+    print(improved.describe_experiments())
 
 
 if __name__ == "__main__":
