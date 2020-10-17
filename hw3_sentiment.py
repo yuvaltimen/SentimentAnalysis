@@ -1,10 +1,11 @@
 import numpy as np
 import sys
 from math import log
+import features
 
 """
 Yuval Timen
-Sentiment Analysis using Naive Bayes Classifier
+Sentiment Analysis using Naive Bayes Classifier and Logistic Regression
 0 represents a negative review, and 1 represents positive
 """
 
@@ -15,7 +16,34 @@ Cite your sources here:
 """
 Implement your functions that are not methods of the Sentiment Analysis class here
 """
+def k_fold(all_examples, k):
+    """Splits the data into k folds, where each fold can be used to measure
+    the performance of the model
+    Parameters:
+        all_examples (list of tuples) - The list of all tuples in our training data
+        k (int) - the number of folds to split our data into
+    Returns:
+        list of lists - A list of lists, each of which contains the test-train split of the data
+    """
+    pass
 
+
+def load_tokens_from_file(file_path_name):
+    """Tokenizes the data in the given file path and returns the content as a list
+    Parameters:
+        file_path_name (str) - The location of the data
+    Returns:
+        list - A list of tokens
+    """
+    output = []
+    with open(file_path_name, 'r') as read_file:
+        for line in read_file:
+            if line.strip() == "":
+                break
+            output.append(line.strip())
+            
+    return output
+    
 
 def generate_tuples_from_file(training_file_path):
     """Returns a list of tuples from the given training file path.
@@ -94,16 +122,7 @@ def f1(gold_labels, classified_labels):
     rec = recall(gold_labels, classified_labels)
     
     return (2 * prec * rec) / (prec + rec)
-
-
-"""
-Implement any other non-required functions here
-"""
-
-"""
-implement your SentimentAnalysis class here
-"""
-
+    
 
 class SentimentAnalysis:
     
@@ -184,6 +203,7 @@ class SentimentAnalysis:
         """
         pos_score = log(self.priors['1'])
         neg_score = log(self.priors['0'])
+        
         for w in data.split():
             if w in self.vocabulary:
                 # Update score for positives
@@ -235,30 +255,85 @@ class SentimentAnalysis:
 
 class SentimentAnalysisImproved:
 
-    def __init__(self):
-        pass
+    def __init__(self, learning_rate=0.1, use_stemming=False, use_negation=False):
+        """Initialize the Logistic Regression class"""
+        self.learning_rate = learning_rate
+        self.stemming = use_stemming
+        self.negation = use_negation
+        self.positive_words = load_tokens_from_file("positive_words.txt")
+        self.negative_words = load_tokens_from_file("negative_words.txt")
+        self.features = [
+            features.num_sentences,
+            features.num_exclamation_marks,
+            features.get_count_words_in_list(self.positive_words),
+            features.get_count_words_in_list(self.negative_words),
+            features.bias_term
+        ]
+        self.weights = np.random.rand(len(self.features))
+
 
     def train(self, examples):
-        pass
+        """Train our Logistic Regression model by updating the weights in each iteration
+        Uses stochastic gradient descent and the cross-entropy loss function to train
+        Parameters:
+            examples (list of tuples) - The list of tuples to train on
+        Returns:
+            None
+        """
+        X = np.array([self.featurize(example[1]) for example in examples])
+        print(X)
+        y = [example[2] for example in examples]
+        
+        
+        
+        
+        
+
 
     def score(self, data):
+        """Uses the model's weights to calculate a score for the given data point
+        Parameters:
+            data (str) - The raw text data, ie. the middle element in the tuple
+        Returns:
+            dict - a mapping from each class to the associated score
+        """
         pass
+
 
     def classify(self, data):
+        """Returns the predicted class of the given data point
+        Parameters:
+            data (str) - The raw text data, ie. the middle element in the tuple
+        Returns:
+            str - label, either '0' or '1'
+        """
         pass
+
 
     def featurize(self, data):
-        pass
+        """Featurizes the data by returning a vector representation of the data
+        Parameters:
+            data (str) - The raw text data, ie. the middle element in the tuple
+        Returns:
+            np.array - the vector representation of the featurized data
+        """
+        ans = []
+        for feature in self.features:
+            ans.append(feature(data))
+            
+        return np.array(ans)
+        
 
     def __str__(self):
-        return "NAME OF YOUR CLASSIFIER HERE"
+        return "Logistic Regression classifier"
+
 
     def describe_experiments(self):
         s = """
     Description of your experiments and their outcomes here.
     """
         return s
-
+    
 
 def main():
     training = sys.argv[1]
