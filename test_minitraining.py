@@ -1,5 +1,8 @@
 import unittest
 import hw3_sentiment as hw3
+from helper_functions import MinMaxScaler
+import numpy as np
+
 
 
 class TestSentimentAnalysisBaselineMiniTrain(unittest.TestCase):
@@ -9,6 +12,39 @@ class TestSentimentAnalysisBaselineMiniTrain(unittest.TestCase):
         # Feel free to edit to reflect where they are on your machine
         self.trainingFilePath="training_files/minitrain.txt"
         self.devFilePath="training_files/minidev.txt"
+        
+        
+    def test_minMaxScaling(self):
+        
+        scaler_1 = MinMaxScaler()
+        scaler_2 = MinMaxScaler()
+        
+        all_vectors_1 = [
+            np.array([100, 0, 1, 0]),
+            np.array([40, 30, 10, 0])
+        ]
+        all_vectors_2 = [
+            np.array([10, 20, 30, 40, 50]),
+            np.array([40, 30, 20, 20, 20]),
+            np.array([5, 4, 100, 3, 0.2])
+        ]
+        expected_output_1 = [
+            np.array([1, 0, 0, 0]),
+            np.array([0, 1, 1, 0])
+        ]
+        expected_output_2 = [
+            np.array([(1/7), (8/13), (1/8), 1, 1]),
+            np.array([1, 1, 0, (17/37), (33/83)]),
+            np.array([0, 0, 1, 0, 0])
+        ]
+        
+        scaler_1.fit(all_vectors_1)
+        scaler_2.fit(all_vectors_2)
+        
+        
+        np.testing.assert_almost_equal(scaler_1.scale(all_vectors_1), expected_output_1)
+        np.testing.assert_almost_equal(scaler_2.scale(all_vectors_2), expected_output_2)
+        
 
 
     def test_GenerateTuplesFromTrainingFile(self):
@@ -116,6 +152,7 @@ class TestSentimentAnalysisBaselineMiniTrain(unittest.TestCase):
         classified = [1, 0, 0, 0, 1]
         classified = [str(b) for b in classified]
         self.assertEqual((1 / 3), hw3.recall(gold, classified))
+
 
     def test_f1(self):
         gold = [1, 1, 1, 0, 0]

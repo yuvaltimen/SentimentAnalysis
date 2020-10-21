@@ -1,133 +1,28 @@
 import numpy as np
 import sys
 from math import log
-import features
+from tqdm import tqdm
+from helper_functions import sigmoid, feature_iterator, cross_entropy_loss, \
+    generate_tuples_from_file, MinMaxScaler, evaluate_model, preprocess
+import matplotlib.pyplot as plt
+import random as rand
 
 """
 Yuval Timen
 Sentiment Analysis using Naive Bayes Classifier and Logistic Regression
-0 represents a negative review, and 1 represents positive
 """
 
-"""
-Cite your sources here:
-"""
 
 """
-Implement your functions that are not methods of the Sentiment Analysis class here
+Naive Bayes classifier for Sentiment Analysis
+Uses bag-of-words as features
+Uses add-1 smoothing
+Optional: set use_binary=True to use Bernoilli Naive Bayes
 """
-def k_fold(all_examples, k):
-    """Splits the data into k folds, where each fold can be used to measure
-    the performance of the model
-    Parameters:
-        all_examples (list of tuples) - The list of all tuples in our training data
-        k (int) - the number of folds to split our data into
-    Returns:
-        list of lists - A list of lists, each of which contains the test-train split of the data
-    """
-    pass
-
-
-def load_tokens_from_file(file_path_name):
-    """Tokenizes the data in the given file path and returns the content as a list
-    Parameters:
-        file_path_name (str) - The location of the data
-    Returns:
-        list - A list of tokens
-    """
-    output = []
-    with open(file_path_name, 'r') as read_file:
-        for line in read_file:
-            if line.strip() == "":
-                break
-            output.append(line.strip())
-            
-    return output
-    
-
-def generate_tuples_from_file(training_file_path):
-    """Returns a list of tuples from the given training file path.
-    All training data is formatted as follows: [ID]\t[Review]\t[Label]\n
-    We can use this to separate our reviews into a list of tuples, each
-    formatted like (id, example_text, label)
-    Parameters:
-        training_file_path (str) - The name of the training data file
-    Returns:
-        list of tuples representing the features of the data
-    """
-    output = []
-    with open(training_file_path, 'r') as file_read:
-        for line in file_read.readlines():
-            line = line.strip()
-            if len(line) != 0:
-                output.append(tuple(line.split("\t")))
-    
-    print(f"Read-in {training_file_path[:10]}, found {len(output)} lines")
-    return output
-
-
-def precision(gold_labels, classified_labels):
-    """Calculates the precision score given the true labels and the classified labels.
-    Parameters:
-        gold_labels (list) - The true labels of the data
-        classified_labels (list) - The classified output of our model
-    Returns:
-        float representing the precision metric of our classification
-    """
-    # precision = tp/(tp + fp)
-    true_positives = 0
-    false_positives = 0
-    
-    for i in range(len(gold_labels)):
-        if gold_labels[i] == '1' and classified_labels[i] == '1':
-            true_positives += 1
-        elif gold_labels[i] == '0' and classified_labels[i] == '1':
-            false_positives += 1
-    
-    return true_positives / (true_positives + false_positives)
-
-
-def recall(gold_labels, classified_labels):
-    """Calculates the recall score given the true labels and the classified labels.
-    Parameters:
-        gold_labels (list) - The true labels of the data
-        classified_labels (list) - The classified output of our model
-    Returns:
-        float representing the recall metric of our classification
-    """
-    # recall = tp/(tp + fn)
-    
-    true_positives = 0
-    false_negatives = 0
-    
-    for i in range(len(gold_labels)):
-        if gold_labels[i] == '1' and classified_labels[i] == '1':
-            true_positives += 1
-        elif gold_labels[i] == '1' and classified_labels[i] == '0':
-            false_negatives += 1
-    
-    return true_positives / (true_positives + false_negatives)
-    
-
-def f1(gold_labels, classified_labels):
-    """Calculates the F1 score given the true labels and the classified labels.
-    Parameters:
-        gold_labels (list) - The true labels of the data
-        classified_labels (list) - The classified output of our model
-    Returns:
-        float representing the F1 metric of our classification
-    """
-    # f1 = (2 * pr * re) / (pr + re)
-    prec = precision(gold_labels, classified_labels)
-    rec = recall(gold_labels, classified_labels)
-    
-    return (2 * prec * rec) / (prec + rec)
-    
-
 class SentimentAnalysis:
     
     def __init__(self, use_binary=False):
-        """Initialize the SentimentAnalysis class"""
+
         self.priors = {'0': 0, '1': 0}
         self.positives_word_counts = {}
         self.negatives_word_counts = {}
@@ -154,7 +49,7 @@ class SentimentAnalysis:
             else:
                 self.priors['0'] += 1
         # Normalize priors to be probabilities
-        self.priors = {k: v/len(examples) for k,v in self.priors.items()}
+        self.priors = {k: v/len(examples) for k, v in self.priors.items()}
         self.vocab_size = len(self.vocabulary)
         print(f"Size of vocabulary: |v| = {self.vocab_size}")
         
@@ -247,47 +142,70 @@ class SentimentAnalysis:
             output.append((w, True))
         return output
         
+        
+    def describe_experiments(self):
+        s = "No experiments ran with Naive Bayes classifier"
+        return s
+    
     
     def __str__(self):
         return "Naive Bayes - bag-of-words baseline"
 
 
-
+"""
+Logistic Regression classifier for Sentiment Analysis
+"""
 class SentimentAnalysisImproved:
 
-    def __init__(self, learning_rate=0.1, use_stemming=False, use_negation=False):
+    def __init__(self, learning_rate=0.01, epsilon=0.0001):
         """Initialize the Logistic Regression class"""
         self.learning_rate = learning_rate
-        self.stemming = use_stemming
-        self.negation = use_negation
-        self.positive_words = load_tokens_from_file("positive_words.txt")
-        self.negative_words = load_tokens_from_file("negative_words.txt")
-        self.features = [
-            features.num_sentences,
-            features.num_exclamation_marks,
-            features.get_count_words_in_list(self.positive_words),
-            features.get_count_words_in_list(self.negative_words),
-            features.bias_term
-        ]
-        self.weights = np.random.rand(len(self.features))
+        self.weights = None  # Save this namespace
+        self.epsilon = epsilon
+        self.scaler = MinMaxScaler()
 
 
     def train(self, examples):
         """Train our Logistic Regression model by updating the weights in each iteration
         Uses stochastic gradient descent and the cross-entropy loss function to train
+        Each iteration trains on a random subset of size batch_size from the training data
         Parameters:
             examples (list of tuples) - The list of tuples to train on
         Returns:
             None
         """
-        X = np.array([self.featurize(example[1]) for example in examples])
-        print(X)
-        y = [example[2] for example in examples]
+        x = self.featurize(examples)
+        y = [float(tup[2]) for tup in examples]
+        gradient_mag = float('inf')
+        count_iters = 0
+        loss_list = []
+        gradient_mags = []
+        num_epochs = 4000
+        batch_size = 10
         
+        self.weights = np.random.randn(x[0].shape[0]).astype('float128')
+        print(f"weights: {self.weights}")
         
+        while gradient_mag > self.epsilon:
+            for i in rand.sample(range(len(y)), batch_size):
+                count_iters += 1
+                y_i = y[i]
+                z = np.dot(x[i], self.weights)
+                sig = sigmoid(z)
+                loss_list.append(cross_entropy_loss(y_i, sig))
+                gradient = (sig - y_i) * x[i]
+                gradient_mag = np.sum(np.abs(gradient))
+                gradient_mags.append(gradient_mag)
+                
+                self.weights = self.weights - (self.learning_rate * gradient)
+            
+        print(f"Done training! Total {count_iters} iterations")
+        print(f"Final weights: {self.weights}")
         
-        
-        
+        plt.plot(loss_list)
+        plt.xlabel("Iteration #")
+        plt.ylabel("gradient magnitude")
+        plt.show()
 
 
     def score(self, data):
@@ -297,7 +215,10 @@ class SentimentAnalysisImproved:
         Returns:
             dict - a mapping from each class to the associated score
         """
-        pass
+        X = self.featurize_one(data)
+        X = self.scaler.scale(X)
+        z = np.dot(X, self.weights)
+        return sigmoid(z)
 
 
     def classify(self, data):
@@ -307,10 +228,13 @@ class SentimentAnalysisImproved:
         Returns:
             str - label, either '0' or '1'
         """
-        pass
+        if self.score(data) < 0.5:
+            return '0'
+        else:
+            return '1'
 
 
-    def featurize(self, data):
+    def featurize_one(self, data):
         """Featurizes the data by returning a vector representation of the data
         Parameters:
             data (str) - The raw text data, ie. the middle element in the tuple
@@ -318,10 +242,59 @@ class SentimentAnalysisImproved:
             np.array - the vector representation of the featurized data
         """
         ans = []
-        for feature in self.features:
-            ans.append(feature(data))
+        for ft in feature_iterator():
+            ans.append(ft(data))
             
         return np.array(ans)
+    
+    
+    def featurize(self, all_examples):
+        """Featurizes all the examples by returning a vector of vectors
+        Parameters:
+            all_examples (list of tuples) - All the training examples, each of the form (ID, data, label)
+        Returns:
+            np.array of np.arrays - The vectorized features
+        """
+        ans = []
+        for example in all_examples:
+            ans.append(self.featurize_one(example[1]))
+        
+        self.scaler.fit(ans)
+        
+        return [self.scaler.scale(vect) for vect in ans]
+    
+    
+    # DISABLED:
+    # I tried to implement Dense Word Embeddings using Gensim's word2vec
+    # but I ran into issues of vector representations: since we don't know the
+    # length of the testing or training example being fed in to the model, we
+    # can't build a consistent vector embedding for it without sacrificing
+    # information about word order. word2vec trains on the input data and then
+    # returns the word embedding for each word in the input, but we want to
+    # encode entire sentences. In order to keep the vectors the same length,
+    # we would have to either sum or average all of the word embeddings in the
+    # input, which would give us a bag-of-words embedding. Not what we want :(
+    
+    # def featurize(self, all_examples):
+    #     """Use gensim's word2vec vectorizer to create dense embeddings for the input data
+    #     Parameters:
+    #         all_examples (list of tuples) - all training examples
+    #     Returns:
+    #         np.array - The vector embedding
+    #     """
+    #     all_sentences = [ex[1] for ex in all_examples]
+    #     vectorizer = Word2Vec(min_count=2,
+    #                           window=4,
+    #                           size=300,
+    #                           alpha=0.02
+    #                           )
+    #     vectorizer.build_vocab(all_sentences)
+    #     vectorizer.train(all_sentences,
+    #                      total_examples=vectorizer.corpus_count,
+    #                      epochs=30)
+    #     vectorizer.init_sims(replace=True)
+    #     all_vectors = [[sum(vectorizer.wv[word])for word in sentence.split()] for sentence in all_sentences]
+    #     return all_vectors
         
 
     def __str__(self):
@@ -330,7 +303,23 @@ class SentimentAnalysisImproved:
 
     def describe_experiments(self):
         s = """
-    Description of your experiments and their outcomes here.
+    I first tried to experiment with Gensim. After realizing that using word embeddings would require
+    some more research, I instead created my own features. The 'feature' module contains all of the functions
+    that extract features from the data, and they are loaded in by a generator. The raw features resulted in
+    a snowball effect on the weights, and would cause an overflow in the sigmoid function. To combat this,
+    I implemented a min-max scaler, which gets fitted to the training data and scales both the training
+    and testing data, and now the weights stay generally between +/- 10.0\n
+    
+    I wanted to see which features were most important for the classification, so I wrote a method for the Logistic
+    Regression class which returns a list of tuples. Each tuple looks like (<feature-name>, <associated-weight>),
+    which essentially shows the relative importance of the features. The resulting list is sorted from most to least
+    important.\n
+    
+    Additionally, I wanted to tune some of the hyper-parameters. I randomly sampled 5000 logistic regression models
+    with varying learning rates and learning rate diminishing functions and found that _____TODO_____\n
+    
+    
+    Finally, I ran a preprocessing cascade on the raw text data to try to extract more information ____TODO_____
     """
         return s
     
@@ -341,31 +330,33 @@ def main():
     training_tuples = generate_tuples_from_file(training)
     testing_tuples = generate_tuples_from_file(testing)
     
-    # Create our classifier
-    sa = SentimentAnalysis()
-    print(sa)
-    # Train the classifier on our training data
-    sa.train(training_tuples)
-    # Report metrics for the baseline
-    classified_labels = []
-    gold_labels = []
-    for test in testing_tuples:
-        classified_labels.append(sa.classify(test[1]))
-        gold_labels.append(test[2])
+    # Pre-process text
+    training_tuples = preprocess(training_tuples)
+    testing_tuples = preprocess(testing_tuples)
     
-    print(f"Precision: {precision(gold_labels, classified_labels)}")
-    print(f"Recall: {recall(gold_labels, classified_labels)}")
-    print(f"F1 metric: {f1(gold_labels, classified_labels)}")
+    # Create our classifiers
+    models = [SentimentAnalysis(), SentimentAnalysisImproved()]
     
-    improved = SentimentAnalysisImproved()
-    print(improved)
-    # Train the classifier on our training data
-
-    # report final precision, recall, f1 (for your best model)
-
-    print(improved.describe_experiments())
-
-
+    for model in models:
+        model.train(training_tuples)
+        p, r, f = evaluate_model(model, testing_tuples)
+        print("Experiments:\n")
+        print(model.describe_experiments())
+        
+        
+def main2():
+    training = sys.argv[1]
+    testing = sys.argv[2]
+    training_tuples = generate_tuples_from_file(training)
+    testing_tuples = generate_tuples_from_file(testing)
+    
+    # Pre-process text
+    training_tuples = preprocess(training_tuples)
+    testing_tuples = preprocess(testing_tuples)
+    
+    
+    
+    
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage:", "python hw3_sentiment.py training-file.txt testing-file.txt")
