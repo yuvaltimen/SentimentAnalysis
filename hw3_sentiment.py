@@ -51,7 +51,6 @@ class SentimentAnalysis:
         # Normalize priors to be probabilities
         self.priors = {k: v/len(examples) for k, v in self.priors.items()}
         self.vocab_size = len(self.vocabulary)
-        print(f"Size of vocabulary: |v| = {self.vocab_size}")
         
         # We split the examples into positives and negatives
         # We group them by their classification
@@ -154,6 +153,7 @@ class SentimentAnalysis:
 
 """
 Logistic Regression classifier for Sentiment Analysis
+Data is vectorized with the 'feature' module
 """
 class SentimentAnalysisImproved:
 
@@ -191,7 +191,6 @@ class SentimentAnalysisImproved:
         
         # Randomly initialize the weights
         self.weights = np.random.randn(x[0].shape[0])
-        print(f"weights: {self.weights}")
         
         # Terminate when we reach convergence
         while gradient_mag > self.epsilon:
@@ -209,9 +208,6 @@ class SentimentAnalysisImproved:
                 
                 # Update the weights
                 self.weights = self.weights - (self.learning_rate * gradient)
-            
-        print(f"Done training! Total {count_iters} iterations")
-        print(f"Final weights: {self.weights}")
 
 
     def score(self, data):
@@ -338,22 +334,30 @@ class SentimentAnalysisImproved:
     that extract features from the data, and they are loaded in by a generator. The raw features resulted in
     a snowball effect on the weights, and would cause an overflow in the sigmoid function. To combat this,
     I implemented a min-max scaler, which gets fitted to the training data and scales both the training
-    and testing data, and now the weights stay generally between +/- 10.0\n
+    and testing data, and now the weights stay generally between +/- 10.0
     
     I wanted to see which features were most important for the classification, so I wrote a method for the Logistic
     Regression class which returns a list of tuples. Each tuple looks like (<feature-name>, <associated-weight>),
     which essentially shows the relative importance of the features. The resulting list is sorted from most to least
-    important. We can see that the output of this function as follows: \n
+    important. We can see that the output of this function as follows:
 
     {self.print_features_by_importance()}\n
     
     Additionally, I wanted to tune the learning rate hyper-parameters. I randomly sampled 100 logistic regression models
     with varying learning rates. I trained all of these models on the same training data and evaluated them all on the
     testing data. Finally, I printed out a list of tuples of the form (<learning-rate>, <f1-score>) sorted by the f1
-    score. I found that \n
+    score. I found that there was a general preference for lower learning rates, which was already known. To see the
+    graph of this, run this module with show_graph parameter set to True in the main() function like this:
+                    'main(show_graph=True)'
+    If I had some more time, I would have run the the following tests:
+
+    1) Testing learning rates sampled exponentially from the interval [10e-7, 0.5], perhaps using more than 100 samples.
+    2) Testing learning rate diminishing functions, ie. linear decay, exponential decay, etc.
+    3) Properly implementing batch-training and tuning the batch-size parameter.
+    4) Created more informative graphs for the current experiment.
     
-    
-    Finally, I ran a preprocessing cascade on the raw text data to try to extract more information ____TODO_____
+    Finally, I ran a preprocessed the data by turning it all to lowercase. If I had extra time, I would have finished
+    the implementation of add_negation.
     """
         return s
     
@@ -375,8 +379,9 @@ def main(show_plot=False):
     for model in models:
         model.train(training_tuples)
         p, r, f = evaluate_model(model, testing_tuples)
-        print("Experiments:\n")
+        print("Experiments:")
         print(model.describe_experiments())
+        print("\n")
     
     # Optional: Show the graph of Learning Rate vs. F1
     if show_plot:
@@ -389,27 +394,35 @@ def graph_learning_rate(re_run=False):
     If you want to just see the output, leave re_run set to the default False value.
     """
     if re_run:
+        
         training = sys.argv[1]
         testing = sys.argv[2]
         training_tuples = generate_tuples_from_file(training)
         testing_tuples = generate_tuples_from_file(testing)
+        
         # Pre-process text
         training_tuples = preprocess(training_tuples)
         testing_tuples = preprocess(testing_tuples)
         outputs = []
+        
         for i in range(100):
             current_learning_rate = rand.random()
             model = SentimentAnalysisImproved(learning_rate=current_learning_rate)
             model.train(training_tuples)
             p, r, f = evaluate_model(model, testing_tuples)
             outputs.append((current_learning_rate, f))
+            
         sort = sorted(outputs, key=lambda tup: tup[1], reverse=True)
+        
         for item in sort:
             print(str(item) + "\n")
         print("Done")
         
     df = pd.read_csv('sampling_output_final.txt')
     df.plot()
+    plt.xlabel("Learning Rate")
+    plt.ylabel("F1 Score")
+    plt.title("Learning Rate vs. F1 Score")
     plt.show()
     
 

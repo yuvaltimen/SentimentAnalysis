@@ -50,7 +50,6 @@ def generate_tuples_from_file(training_file_path):
             if len(line) != 0:
                 output.append(tuple(line.split("\t")))
     
-    print(f"Read-in {training_file_path[:10]}, found {len(output)} lines")
     return output
 
 def add_negation(data):
@@ -63,7 +62,7 @@ def add_negation(data):
     Returns:
         str - The negated data
     """
-    #
+
     # temp_data = data
     # current_idx = 0
     # final_data = ""
@@ -106,18 +105,6 @@ def preprocess(all_examples):
         all_negation.append((tup[0], negated, tup[2]))
     
     return all_negation
-
-
-def k_fold(all_examples, k):
-    """Splits the data into k folds, where each fold can be used to measure
-    the performance of the model
-    Parameters:
-        all_examples (list of tuples) - The list of all tuples in our training data
-        k (int) - the number of folds to split our data into
-    Returns:
-        list of lists - A list of lists, each of which contains the test-train split of the data
-    """
-    pass
 
 
 def cross_entropy_loss(y, sig):
@@ -295,14 +282,11 @@ def evaluate_model(model, dev_set):
         classified_labels.append(model.classify(test[1]))
         gold_labels.append(test[2])
     
-    print(f"gold: {gold_labels}")
-    print(f"class: {classified_labels}")
-    
     precision_score = precision(gold_labels, classified_labels)
     recall_score = recall(gold_labels, classified_labels)
     f1_score = f1(gold_labels, classified_labels)
     
-    print(f"Model output for: {model}")
+    print(f"Model output for: {str(model)}")
     print(f"Precision: {precision_score}")
     print(f"Recall: {recall_score}")
     print(f"F1 metric: {f1_score}")
