@@ -53,7 +53,42 @@ def generate_tuples_from_file(training_file_path):
     print(f"Read-in {training_file_path[:10]}, found {len(output)} lines")
     return output
 
-
+def add_negation(data):
+    """Adds negation information to the given data.
+    Specifically, for every sentence that contains a negation word (ie. not, non),
+    then this function will prepend NEGATIVE_ onto the beginning of every other word
+    in the sentence.
+    Parameters:
+        data (str) - The raw text data
+    Returns:
+        str - The negated data
+    """
+    #
+    # temp_data = data
+    # current_idx = 0
+    # final_data = ""
+    # # regular_exp = r'([N|n]ot|[N|n]o|[N|n]ever)+([^.!?\n])*[.!?\n]'
+    # regular_exp = r'(?<=[N|n]ot|[N|n]o|[N|n]ever) +([\w* *])*(?=|[A-Z]|$)'
+    #
+    #
+    # current_match = re.search(regular_exp, temp_data)
+    #
+    # while current_match:
+    #     final_data += temp_data[current_idx : current_match.start(0) - 1]
+    #     current_match = re.search(regular_exp, )
+    #
+    # match_iterator = regular_exp.finditer(temp_data)
+    # for match in match_iterator:
+    #     print(match.group(0))
+    #     # subset_of_data = temp_data[match.start(0): match.end(0)]
+    #     # for word in range(len(subset_of_data.split())):
+    #     #     if word != 0:
+    #     #         subset_of_data[word] = "NEGATIVE_" + subset_of_data[word]
+    #     # data[match.start(0): match.end(0)] = subset_of_data
+        
+    return data
+    
+    
 def preprocess(all_examples):
     """Runs the following preprocessing steps on the data:
     1. all to lowercase
@@ -65,12 +100,12 @@ def preprocess(all_examples):
     """
     all_lowercase = [(tup[0], tup[1].lower(), tup[2]) for tup in all_examples]
     
-    # all_negation = []
-    # for tup in all_lowercase:
-    #     negated =
-    #     all_negation.append(tup[0], negated, tup[2])
+    all_negation = []
+    for tup in all_lowercase:
+        negated = add_negation(tup[1])
+        all_negation.append((tup[0], negated, tup[2]))
     
-    return all_lowercase
+    return all_negation
 
 
 def k_fold(all_examples, k):
@@ -105,7 +140,7 @@ def feature_iterator():
     """
     for name, val in features.__dict__.items():
         if isinstance(val, FunctionType):
-            yield val
+            yield name, val
 
 
 def sigmoid(z):

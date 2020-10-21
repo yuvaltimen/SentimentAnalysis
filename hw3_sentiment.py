@@ -1,10 +1,10 @@
 import numpy as np
 import sys
 from math import log
-from tqdm import tqdm
+import pandas as pd
+import matplotlib.pyplot as plt
 from helper_functions import sigmoid, feature_iterator, cross_entropy_loss, \
     generate_tuples_from_file, MinMaxScaler, evaluate_model, preprocess
-import matplotlib.pyplot as plt
 import random as rand
 
 """
@@ -157,55 +157,61 @@ Logistic Regression classifier for Sentiment Analysis
 """
 class SentimentAnalysisImproved:
 
-    def __init__(self, learning_rate=0.01, epsilon=0.0001):
+    def __init__(self, learning_rate=0.01, epsilon=0.0001, batch_size=10):
         """Initialize the Logistic Regression class"""
         self.learning_rate = learning_rate
         self.weights = None  # Save this namespace
         self.epsilon = epsilon
         self.scaler = MinMaxScaler()
+        self.batch_size = batch_size
 
 
     def train(self, examples):
-        """Train our Logistic Regression model by updating the weights in each iteration
-        Uses stochastic gradient descent and the cross-entropy loss function to train
-        Each iteration trains on a random subset of size batch_size from the training data
+        """Train our Logistic Regression model by updating the weights in each iteration.
+        Uses stochastic gradient descent and the cross-entropy loss function to train.
+        Each iteration trains on a random subset of size batch_size from the training data.
+        Training terminates when the absolute value of the sum of all elements in
+        the gradient is less than our epsilon.
         Parameters:
             examples (list of tuples) - The list of tuples to train on
         Returns:
             None
         """
+        # Featurize the inputs
         x = self.featurize(examples)
+        # Extract the labels as a separate list
         y = [float(tup[2]) for tup in examples]
-        gradient_mag = float('inf')
+        # Initial value for the magnitude of the gradient
+        # Since this doesn't get computed til time t+1, then
+        # we set it to be greater than our epsilon term
+        gradient_mag = self.epsilon + 10
         count_iters = 0
         loss_list = []
         gradient_mags = []
-        num_epochs = 4000
-        batch_size = 10
         
-        self.weights = np.random.randn(x[0].shape[0]).astype('float128')
+        # Randomly initialize the weights
+        self.weights = np.random.randn(x[0].shape[0])
         print(f"weights: {self.weights}")
         
+        # Terminate when we reach convergence
         while gradient_mag > self.epsilon:
-            for i in rand.sample(range(len(y)), batch_size):
+            # Randomly sample batch_size of training examples
+            for i in rand.sample(range(len(y)), self.batch_size):
                 count_iters += 1
                 y_i = y[i]
                 z = np.dot(x[i], self.weights)
                 sig = sigmoid(z)
                 loss_list.append(cross_entropy_loss(y_i, sig))
+                # Gradient = derivative(loss)
                 gradient = (sig - y_i) * x[i]
                 gradient_mag = np.sum(np.abs(gradient))
                 gradient_mags.append(gradient_mag)
                 
+                # Update the weights
                 self.weights = self.weights - (self.learning_rate * gradient)
             
         print(f"Done training! Total {count_iters} iterations")
         print(f"Final weights: {self.weights}")
-        
-        plt.plot(loss_list)
-        plt.xlabel("Iteration #")
-        plt.ylabel("gradient magnitude")
-        plt.show()
 
 
     def score(self, data):
@@ -242,7 +248,7 @@ class SentimentAnalysisImproved:
             np.array - the vector representation of the featurized data
         """
         ans = []
-        for ft in feature_iterator():
+        for name, ft in feature_iterator():
             ans.append(ft(data))
             
         return np.array(ans)
@@ -264,7 +270,31 @@ class SentimentAnalysisImproved:
         return [self.scaler.scale(vect) for vect in ans]
     
     
+    def print_features_by_importance(self):
+        """Returns a list of tuples portraying the features used in the Regression by order of importance.
+        Each tuple in the list looks like (<feature-name>, <associated-weight>) and the tuples are sorted
+        from highest to lowest absolute weight
+        Parameters:
+            None
+        Returns:
+            list of tuples - the sorted list of features and weights
+        """
+        
+        ans = []
+        ans_str = ""
+        for idx, (name, ft) in enumerate(feature_iterator()):
+            ans.append((name, self.weights[idx]))
+            
+        ans = sorted(ans, key=lambda tup: abs(tup[1]), reverse=True)
+        
+        for name, weight in ans:
+            ans_str += f"\tFeature: {name} ---> Weight: {weight}\n"
+        
+        return ans_str
+            
+    
     # DISABLED:
+    
     # I tried to implement Dense Word Embeddings using Gensim's word2vec
     # but I ran into issues of vector representations: since we don't know the
     # length of the testing or training example being fed in to the model, we
@@ -302,7 +332,7 @@ class SentimentAnalysisImproved:
 
 
     def describe_experiments(self):
-        s = """
+        s = f"""
     I first tried to experiment with Gensim. After realizing that using word embeddings would require
     some more research, I instead created my own features. The 'feature' module contains all of the functions
     that extract features from the data, and they are loaded in by a generator. The raw features resulted in
@@ -313,10 +343,14 @@ class SentimentAnalysisImproved:
     I wanted to see which features were most important for the classification, so I wrote a method for the Logistic
     Regression class which returns a list of tuples. Each tuple looks like (<feature-name>, <associated-weight>),
     which essentially shows the relative importance of the features. The resulting list is sorted from most to least
-    important.\n
+    important. We can see that the output of this function as follows: \n
+
+    {self.print_features_by_importance()}\n
     
-    Additionally, I wanted to tune some of the hyper-parameters. I randomly sampled 5000 logistic regression models
-    with varying learning rates and learning rate diminishing functions and found that _____TODO_____\n
+    Additionally, I wanted to tune the learning rate hyper-parameters. I randomly sampled 100 logistic regression models
+    with varying learning rates. I trained all of these models on the same training data and evaluated them all on the
+    testing data. Finally, I printed out a list of tuples of the form (<learning-rate>, <f1-score>) sorted by the f1
+    score. I found that \n
     
     
     Finally, I ran a preprocessing cascade on the raw text data to try to extract more information ____TODO_____
@@ -324,7 +358,7 @@ class SentimentAnalysisImproved:
         return s
     
 
-def main():
+def main(show_plot=False):
     training = sys.argv[1]
     testing = sys.argv[2]
     training_tuples = generate_tuples_from_file(training)
@@ -337,26 +371,48 @@ def main():
     # Create our classifiers
     models = [SentimentAnalysis(), SentimentAnalysisImproved()]
     
+    # Output the evaluation on the model
     for model in models:
         model.train(training_tuples)
         p, r, f = evaluate_model(model, testing_tuples)
         print("Experiments:\n")
         print(model.describe_experiments())
+    
+    # Optional: Show the graph of Learning Rate vs. F1
+    if show_plot:
+        graph_learning_rate()
+    
+    
+def graph_learning_rate(re_run=False):
+    """
+    WARNING: This function takes a long time to run. It trains and evaluates 100 Logistic Regression models
+    If you want to just see the output, leave re_run set to the default False value.
+    """
+    if re_run:
+        training = sys.argv[1]
+        testing = sys.argv[2]
+        training_tuples = generate_tuples_from_file(training)
+        testing_tuples = generate_tuples_from_file(testing)
+        # Pre-process text
+        training_tuples = preprocess(training_tuples)
+        testing_tuples = preprocess(testing_tuples)
+        outputs = []
+        for i in range(100):
+            current_learning_rate = rand.random()
+            model = SentimentAnalysisImproved(learning_rate=current_learning_rate)
+            model.train(training_tuples)
+            p, r, f = evaluate_model(model, testing_tuples)
+            outputs.append((current_learning_rate, f))
+        sort = sorted(outputs, key=lambda tup: tup[1], reverse=True)
+        for item in sort:
+            print(str(item) + "\n")
+        print("Done")
         
-        
-def main2():
-    training = sys.argv[1]
-    testing = sys.argv[2]
-    training_tuples = generate_tuples_from_file(training)
-    testing_tuples = generate_tuples_from_file(testing)
+    df = pd.read_csv('sampling_output_final.txt')
+    df.plot()
+    plt.show()
     
-    # Pre-process text
-    training_tuples = preprocess(training_tuples)
-    testing_tuples = preprocess(testing_tuples)
-    
-    
-    
-    
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage:", "python hw3_sentiment.py training-file.txt testing-file.txt")

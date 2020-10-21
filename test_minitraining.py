@@ -1,6 +1,6 @@
 import unittest
 import hw3_sentiment as hw3
-from helper_functions import MinMaxScaler
+from helper_functions import MinMaxScaler, add_negation
 import numpy as np
 
 
@@ -12,6 +12,12 @@ class TestSentimentAnalysisBaselineMiniTrain(unittest.TestCase):
         # Feel free to edit to reflect where they are on your machine
         self.trainingFilePath="training_files/minitrain.txt"
         self.devFilePath="training_files/minidev.txt"
+        
+        
+    def test_addNegation(self):
+        test_str = "I do not have anything. I am poor. Please, I've never had riches."
+        
+        print(add_negation(test_str))
         
         
     def test_minMaxScaling(self):
