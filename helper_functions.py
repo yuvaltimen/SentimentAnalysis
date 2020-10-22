@@ -1,8 +1,9 @@
 import numpy as np
-import features
-from types import FunctionType
 import re
 from math import log
+import features
+from types import FunctionType
+
 
 
 """
@@ -66,7 +67,7 @@ def add_negation(data):
     # temp_data = data
     # current_idx = 0
     # final_data = ""
-    # # regular_exp = r'([N|n]ot|[N|n]o|[N|n]ever)+([^.!?\n])*[.!?\n]'
+    #
     # regular_exp = r'(?<=[N|n]ot|[N|n]o|[N|n]ever) +([\w* *])*(?=|[A-Z]|$)'
     #
     #
@@ -84,7 +85,7 @@ def add_negation(data):
     #     #     if word != 0:
     #     #         subset_of_data[word] = "NEGATIVE_" + subset_of_data[word]
     #     # data[match.start(0): match.end(0)] = subset_of_data
-        
+    #
     return data
     
     

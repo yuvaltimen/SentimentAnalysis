@@ -54,8 +54,8 @@ class SentimentAnalysis:
         
         # We split the examples into positives and negatives
         # We group them by their classification
-        positive_examples = list(filter(lambda tup: bool(int(tup[2])), examples))
-        negative_examples = list(filter(lambda tup: not bool(int(tup[2])), examples))
+        positive_examples = list(filter(lambda t: bool(int(t[2])), examples))
+        negative_examples = list(filter(lambda t: not bool(int(t[2])), examples))
         
         # If we're using Binary-NB, let's remove all duplicate words in each document
         if self.binary:
