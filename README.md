@@ -6,16 +6,23 @@ This is an implementation of a Logistic Regression model for conducting Sentimen
 
 ## Metrics on Validation Set
 Model output for: Naive Bayes - bag-of-words baseline
-	Precision: 1.0
-	Recall: 0.5
-	F1 metric: 0.6666666666666666
+
+Precision: 1.0
+
+Recall: 0.5
+
+F1 metric: 0.6666666666666666
 
 Model output for: Logistic Regression classifier
-	Precision: 1.0
-	Recall: 1.0
-	F1 Score: 1.0
+
+Precision: 1.0
+
+Recall: 1.0
+
+F1 Score: 1.0
 
 ## Metrics on Held Out Set using Logistic Regression
+
 F1 Score: 0.943
 
 ## Experiments
@@ -26,7 +33,7 @@ F1 Score: 0.943
     a snowball effect on the weights, and would cause an overflow in the sigmoid function. To combat this,
     I implemented a min-max scaler, which gets fitted to the training data and scales both the training
     and testing data, and now the weights stay generally between +/- 10.0
-    
+
     I wanted to see which features were most important for the classification, so I wrote a method for the Logistic
     Regression class which returns a list of tuples. Each tuple looks like (<feature-name>, <associated-weight>),
     which essentially shows the relative importance of the features. The resulting list is sorted from most to least
@@ -41,7 +48,7 @@ F1 Score: 0.943
 	Feature: count_uppercase_word ---> Weight: 0.4325877129417038
 
 
-    
+
     Additionally, I wanted to tune the learning rate hyper-parameters. I randomly sampled 100 logistic regression models
     with varying learning rates. I trained all of these models on the same training data and evaluated them all on the
     testing data. Finally, I printed out a list of tuples of the form (<learning-rate>, <f1-score>) sorted by the f1
@@ -54,8 +61,6 @@ F1 Score: 0.943
     2) Testing learning rate diminishing functions, ie. linear decay, exponential decay, etc.
     3) Properly implementing batch-training and tuning the batch-size parameter.
     4) Created more informative graphs for the current experiment.
-    
+
     Finally, I ran a preprocessed the data by turning it all to lowercase. If I had extra time, I would have finished
     the implementation of add_negation.
-
-
