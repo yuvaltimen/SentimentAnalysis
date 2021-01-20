@@ -6,14 +6,14 @@ This is an implementation of a Logistic Regression model for conducting Sentimen
 
 ## Metrics on Validation Set
 Model output for: Naive Bayes - bag-of-words baseline
-Precision: 1.0
-Recall: 0.5
-F1 metric: 0.6666666666666666
+	Precision: 1.0
+	Recall: 0.5
+	F1 metric: 0.6666666666666666
 
 Model output for: Logistic Regression classifier
-Precision: 1.0
-Recall: 1.0
-F1 Score: 1.0
+	Precision: 1.0
+	Recall: 1.0
+	F1 Score: 1.0
 
 ## Metrics on Held Out Set using Logistic Regression
 F1 Score: 0.943
