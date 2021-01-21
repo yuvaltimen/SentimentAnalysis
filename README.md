@@ -1,19 +1,20 @@
 # SentimentAnalysis
 Sentiment Analysis written in Python for restaurant review data.
 
-## About
+# About
 This is an implementation of a Logistic Regression model for conducting Sentiment Analysis on natural language data. The data is restaurant review data, and the Logistic Regression was implemented from scratch.
 
-## Metrics on Validation Set
-Model output for: Naive Bayes - bag-of-words baseline
+# Metrics on Validation Set
+
+### Model output for: Naive Bayes - bag-of-words baseline
 
 Precision: 1.0
 
 Recall: 0.5
 
-F1 metric: 0.6666666666666666
+F1 metric: 0.667
 
-Model output for: Logistic Regression classifier
+### Model output for: Logistic Regression classifier
 
 Precision: 1.0
 
@@ -21,11 +22,11 @@ Recall: 1.0
 
 F1 Score: 1.0
 
-## Metrics on Held Out Set using Logistic Regression
+# Metrics on Held Out Set using Logistic Regression
 
 F1 Score: 0.943
 
-## Experiments
+# Experiments
 
   I first tried to experiment with Gensim. After realizing that using word embeddings would require
   some more research, I instead created my own features. The 'feature' module contains all of the functions
