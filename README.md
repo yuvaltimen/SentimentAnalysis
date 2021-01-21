@@ -36,7 +36,7 @@ F1 Score: 0.943
   and testing data, and now the weights stay generally between +/- 10.0
 
   I wanted to see which features were most important for the classification, so I wrote a method for the Logistic
-  Regression class which returns a list of tuples. Each tuple looks like (<feature-name>, <associated-weight>),
+  Regression class which returns a list of tuples. Each tuple looks like (feature-name, associated-weight),
   which essentially shows the relative importance of the features. The resulting list is sorted from most to least
   important. We can see that the output of this function as follows:
 
