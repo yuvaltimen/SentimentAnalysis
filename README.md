@@ -52,7 +52,7 @@ F1 Score: 0.943
 
   Additionally, I wanted to tune the learning rate hyper-parameters. I randomly sampled 100 logistic regression models
   with varying learning rates. I trained all of these models on the same training data and evaluated them all on the
-  testing data. Finally, I printed out a list of tuples of the form (<learning-rate>, <f1-score>) sorted by the f1
+  testing data. Finally, I printed out a list of tuples of the form (learning-rate, f1-score) sorted by the F1
   score. I found that there was a general preference for lower learning rates, which was already known. To see the
   graph of this, run this module with show_graph parameter set to True in the main() function like this:
                   'main(show_graph=True)'
